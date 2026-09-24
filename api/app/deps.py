@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import User
-from app.redis_client import get_session
+from app.redis_client import get_kick_info, get_session, touch_session
 
 
 async def get_current_user(
@@ -17,17 +17,26 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="缺少会话标识",
         )
+
     session = await get_session(x_session_id)
     if not session:
+        kick_info = await get_kick_info(x_session_id)
+        if kick_info:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"您的账号已被强制下线：{kick_info.get('reason', '')}。下线时间：{kick_info.get('kick_time', '')}",
+            )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="登录已过期或账号已在其他设备登录",
         )
-    if session.get("ban_flag"):
+
+    if session.get("banFlag"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="账号已被封禁",
         )
+    await touch_session(x_session_id)
     return session
 
 

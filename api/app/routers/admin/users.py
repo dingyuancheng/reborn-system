@@ -1,7 +1,8 @@
 import uuid
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +13,16 @@ from app.schemas.user_schemas import UserCreate, UserOut, UserSimpleOut, UserUpd
 from app.security import hash_password
 
 router = APIRouter(prefix="/api/admin/users", tags=["admin-users"])
+
+
+class ResetPasswordRequest(BaseModel):
+    new_password: str
+
+
+class BanUserRequest(BaseModel):
+    ban_flag: bool = True
+    ban_time: Optional[str] = None
+    ban_reason: Optional[str] = None
 
 
 @router.get("", response_model=list[UserSimpleOut])
@@ -151,7 +162,7 @@ async def delete_user(
 @router.post("/{user_id}/reset-password")
 async def reset_password(
     user_id: uuid.UUID,
-    new_password: str,
+    payload: ResetPasswordRequest,
     current_user: dict[str, Any] = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
@@ -159,6 +170,32 @@ async def reset_password(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="用户不存在")
-    user.password = hash_password(new_password)
+    user.password = hash_password(payload.new_password)
     await db.commit()
     return {"message": "密码已重置"}
+
+
+@router.put("/{user_id}/ban")
+async def ban_user(
+    user_id: uuid.UUID,
+    payload: BanUserRequest,
+    current_user: dict[str, Any] = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(User).where(User.id == user_id, User.deleted == False))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+
+    if str(user.id) == current_user.get("userId"):
+        raise HTTPException(status_code=400, detail="不能封禁自己")
+
+    user.ban_flag = payload.ban_flag
+    user.ban_time = payload.ban_time or None
+    user.ban_reason = payload.ban_reason or None if payload.ban_flag else None
+    if not payload.ban_flag:
+        user.ban_time = None
+        user.ban_reason = None
+    await db.commit()
+    await db.refresh(user)
+    return {"message": "封禁状态已更新", "ban_flag": user.ban_flag}

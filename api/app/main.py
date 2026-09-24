@@ -1,16 +1,19 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import uuid
 from datetime import datetime, timezone
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import STATIC_URL, UPLOAD_DIR
 from app.database import Base, engine, AsyncSessionLocal
 from app.models import (
-    Family, Menu, MenuCategory, User, UserMenu, UserMenuClick,
+    Family, Menu, MenuCategory, User, UserLoginLog, UserMenu, UserMenuClick, UserActionLog,
 )
 from app.routers import auth, users
 from app.routers.admin import sessions as admin_sessions
@@ -19,6 +22,9 @@ from app.routers.admin import families as admin_families
 from app.routers.admin import categories as admin_categories
 from app.routers.admin import menus as admin_menus
 from app.routers.admin import permissions as admin_permissions
+from app.routers.admin import stats as admin_stats
+from app.routers.admin import upload as admin_upload
+from app.routers.admin import redis as admin_redis
 from app.routers import user as app_user
 
 DEFAULT_MENUS = [
@@ -110,3 +116,10 @@ app.include_router(admin_families.router)
 app.include_router(admin_categories.router)
 app.include_router(admin_menus.router)
 app.include_router(admin_permissions.router)
+app.include_router(admin_stats.router)
+app.include_router(admin_upload.router)
+app.include_router(admin_redis.router)
+
+upload_path = Path(UPLOAD_DIR)
+upload_path.mkdir(parents=True, exist_ok=True)
+app.mount(STATIC_URL, StaticFiles(directory=str(upload_path)), name="static")

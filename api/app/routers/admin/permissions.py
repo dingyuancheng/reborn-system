@@ -88,3 +88,64 @@ async def list_all_menus_simple(
     )
     menus = list(result.scalars().all())
     return [MenuSimpleOut.model_validate(m) for m in menus]
+
+
+class BatchPermissionRequest(BaseModel):
+    user_ids: List[uuid.UUID]
+    menu_ids: List[uuid.UUID]
+    mode: str = "replace"
+
+
+@router.put("/batch-assign")
+async def batch_assign_permissions(
+    payload: BatchPermissionRequest,
+    current_user: dict[str, Any] = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    valid_menu_stmt = select(Menu.id).where(Menu.deleted == False)
+    valid_menu_result = await db.execute(valid_menu_stmt)
+    valid_menu_ids = {row[0] for row in valid_menu_result.all()}
+
+    invalid_ids = [mid for mid in payload.menu_ids if mid not in valid_menu_ids]
+    if invalid_ids:
+        raise HTTPException(status_code=400, detail=f"存在无效菜单 ID: {len(invalid_ids)} 个")
+
+    for user_id in payload.user_ids:
+        user_check = await db.execute(
+            select(User).where(User.id == user_id, User.deleted == False)
+        )
+        if not user_check.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail=f"用户不存在: {user_id}")
+
+        if payload.mode == "replace":
+            existing_stmt = select(UserMenu).where(UserMenu.user_id == user_id)
+            existing_result = await db.execute(existing_stmt)
+            for record in existing_result.scalars().all():
+                db.delete(record)
+
+            for mid in payload.menu_ids:
+                db.add(UserMenu(user_id=user_id, menu_id=mid))
+
+        elif payload.mode == "add":
+            existing_stmt = select(UserMenu.menu_id).where(UserMenu.user_id == user_id)
+            existing_result = await db.execute(existing_stmt)
+            existing_ids = {row[0] for row in existing_result.all()}
+            for mid in payload.menu_ids:
+                if mid not in existing_ids:
+                    db.add(UserMenu(user_id=user_id, menu_id=mid))
+
+        elif payload.mode == "remove":
+            existing_stmt = select(UserMenu).where(
+                UserMenu.user_id == user_id,
+                UserMenu.menu_id.in_(payload.menu_ids),
+            )
+            existing_result = await db.execute(existing_stmt)
+            for record in existing_result.scalars().all():
+                db.delete(record)
+
+    await db.commit()
+    return {
+        "message": "批量分配完成",
+        "affected_users": len(payload.user_ids),
+        "mode": payload.mode,
+    }

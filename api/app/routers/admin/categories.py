@@ -24,7 +24,29 @@ async def list_categories(
         select(MenuCategory).where(MenuCategory.deleted == False).order_by(MenuCategory.sort.asc())
     )
     categories = list(result.scalars().all())
-    return [MenuCategoryOut.model_validate(c) for c in categories]
+
+    if categories:
+        cat_ids = [c.id for c in categories]
+        count_result = await db.execute(
+            select(Menu.category_id, func.count(Menu.id))
+            .where(Menu.category_id.in_(cat_ids), Menu.deleted == False)
+            .group_by(Menu.category_id)
+        )
+        count_map = {row[0]: row[1] for row in count_result.all()}
+    else:
+        count_map = {}
+
+    return [
+        MenuCategoryOut(
+            id=c.id,
+            name=c.name,
+            icon=c.icon,
+            sort=c.sort,
+            status=c.status,
+            menu_count=count_map.get(c.id, 0),
+        )
+        for c in categories
+    ]
 
 
 @router.post("", response_model=MenuCategoryOut, status_code=status.HTTP_201_CREATED)

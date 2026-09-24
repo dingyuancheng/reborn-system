@@ -94,9 +94,10 @@ async def update_menu(
     return MenuOut.model_validate(menu)
 
 
-@router.delete("/{menu_id}")
-async def delete_menu(
+@router.put("/{menu_id}/status", response_model=MenuOut)
+async def update_menu_status(
     menu_id: uuid.UUID,
+    payload: dict,
     current_user: dict[str, Any] = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
@@ -104,6 +105,34 @@ async def delete_menu(
     menu = result.scalar_one_or_none()
     if not menu:
         raise HTTPException(status_code=404, detail="菜单不存在")
-    menu.deleted = True
+
+    if "status" in payload:
+        menu.status = payload["status"]
+    if "visible" in payload:
+        menu.visible = payload["visible"]
     await db.commit()
-    return {"message": "菜单已删除"}
+    await db.refresh(menu)
+    return MenuOut.model_validate(menu)
+
+
+@router.delete("/{menu_id}")
+async def delete_menu(
+    menu_id: uuid.UUID,
+    hard: bool = Query(default=False),
+    current_user: dict[str, Any] = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(Menu).where(Menu.id == menu_id, Menu.deleted == False))
+    menu = result.scalar_one_or_none()
+    if not menu:
+        raise HTTPException(status_code=404, detail="菜单不存在")
+
+    if hard:
+        await db.delete(menu)
+        await db.commit()
+        return {"message": "菜单已永久删除"}
+    else:
+        menu.deleted = True
+        menu.status = 0
+        await db.commit()
+        return {"message": "菜单已删除"}

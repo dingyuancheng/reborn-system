@@ -13,6 +13,7 @@ class MenuCategoryOut(BaseModel):
     icon: Optional[str] = None
     sort: int = 0
     status: int = 1
+    menu_count: int = 0
 
 
 class MenuCategoryCreate(BaseModel):

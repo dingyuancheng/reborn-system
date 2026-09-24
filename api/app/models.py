@@ -170,3 +170,48 @@ class UserMenuClick(Base):
 
     user: Mapped["User"] = relationship("User")
     menu: Mapped["Menu"] = relationship("Menu", back_populates="click_records")
+
+
+class UserLoginLog(Base):
+    __tablename__ = "t_user_login_log"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("t_user.id", ondelete="SET NULL"), nullable=True
+    )
+    username: Mapped[str] = mapped_column(String(64), nullable=False)
+    nickname: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    login_result: Mapped[int] = mapped_column(SmallInteger, default=1, nullable=False)
+    fail_reason: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    ip: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    user_agent: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    device_info: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    login_time: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class UserActionLog(Base):
+    __tablename__ = "t_user_action_log"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("t_user.id", ondelete="CASCADE"), nullable=False
+    )
+    username: Mapped[str] = mapped_column(String(64), nullable=False)
+    menu_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("t_menu.id", ondelete="SET NULL"), nullable=True
+    )
+    menu_name: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    action_type: Mapped[str] = mapped_column(String(32), default="click", nullable=False)
+    ip: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    user_agent: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    device_info: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    action_time: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
