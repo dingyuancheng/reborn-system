@@ -40,7 +40,6 @@ async def list_categories(
         MenuCategoryOut(
             id=c.id,
             name=c.name,
-            icon=c.icon,
             sort=c.sort,
             status=c.status,
             menu_count=count_map.get(c.id, 0),
@@ -57,7 +56,6 @@ async def create_category(
 ):
     category = MenuCategory(
         name=payload.name,
-        icon=payload.icon,
         sort=payload.sort,
         status=payload.status,
     )

@@ -3,7 +3,7 @@ from typing import Any, List
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -68,8 +68,11 @@ async def set_user_permissions(
     new_ids = set(payload.menu_ids)
     existing_ids = set(existing_map.keys())
 
-    for mid in existing_ids - new_ids:
-        db.delete(existing_map[mid])
+    to_delete = existing_ids - new_ids
+    if to_delete:
+        await db.execute(
+            delete(UserMenu).where(UserMenu.user_id == user_id, UserMenu.menu_id.in_(to_delete))
+        )
 
     for mid in new_ids - existing_ids:
         db.add(UserMenu(user_id=user_id, menu_id=mid))
@@ -118,10 +121,7 @@ async def batch_assign_permissions(
             raise HTTPException(status_code=400, detail=f"用户不存在: {user_id}")
 
         if payload.mode == "replace":
-            existing_stmt = select(UserMenu).where(UserMenu.user_id == user_id)
-            existing_result = await db.execute(existing_stmt)
-            for record in existing_result.scalars().all():
-                db.delete(record)
+            await db.execute(delete(UserMenu).where(UserMenu.user_id == user_id))
 
             for mid in payload.menu_ids:
                 db.add(UserMenu(user_id=user_id, menu_id=mid))
@@ -135,13 +135,12 @@ async def batch_assign_permissions(
                     db.add(UserMenu(user_id=user_id, menu_id=mid))
 
         elif payload.mode == "remove":
-            existing_stmt = select(UserMenu).where(
-                UserMenu.user_id == user_id,
-                UserMenu.menu_id.in_(payload.menu_ids),
+            await db.execute(
+                delete(UserMenu).where(
+                    UserMenu.user_id == user_id,
+                    UserMenu.menu_id.in_(payload.menu_ids),
+                )
             )
-            existing_result = await db.execute(existing_stmt)
-            for record in existing_result.scalars().all():
-                db.delete(record)
 
     await db.commit()
     return {

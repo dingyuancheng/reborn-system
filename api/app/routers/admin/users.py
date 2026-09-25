@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.deps import require_admin
 from app.models import Family, User
+from app.redis_client import kick_user_sessions
 from app.schemas.user_schemas import UserCreate, UserOut, UserSimpleOut, UserUpdate
 from app.security import hash_password
 
@@ -28,10 +29,13 @@ class BanUserRequest(BaseModel):
 @router.get("", response_model=list[UserSimpleOut])
 async def list_users(
     family_id: Optional[uuid.UUID] = None,
+    deleted: Optional[bool] = None,
     current_user: dict[str, Any] = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    stmt = select(User).where(User.deleted == False)
+    stmt = select(User)
+    if deleted is not None:
+        stmt = stmt.where(User.deleted == deleted)
     if family_id:
         stmt = stmt.where(User.family_id == family_id)
     stmt = stmt.order_by(User.create_time.desc())
@@ -109,6 +113,7 @@ async def update_user(
 
     update_data = payload.model_dump(exclude_unset=True)
     if update_data:
+        old_status = user.status
         old_family_id = user.family_id
         for field, value in update_data.items():
             setattr(user, field, value)
@@ -127,6 +132,12 @@ async def update_user(
 
         await db.commit()
         await db.refresh(user)
+
+        if old_status == 1 and user.status == 0:
+            await kick_user_sessions(
+                user_id=str(user.id),
+                reason="账号已被禁用，请联系管理员",
+            )
 
     return UserOut.model_validate(user)
 
@@ -149,6 +160,11 @@ async def delete_user(
     user.deleted = True
     await db.commit()
 
+    await kick_user_sessions(
+        user_id=str(user.id),
+        reason="账号已失效，请重新注册或联系管理员",
+    )
+
     if old_family_id:
         fam_result = await db.execute(select(Family).where(Family.id == old_family_id))
         fam = fam_result.scalar_one_or_none()
@@ -157,6 +173,32 @@ async def delete_user(
             await db.commit()
 
     return {"message": "用户已删除"}
+
+
+@router.post("/{user_id}/restore")
+async def restore_user(
+    user_id: uuid.UUID,
+    current_user: dict[str, Any] = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    if not user.deleted:
+        raise HTTPException(status_code=400, detail="该用户未失效")
+
+    user.deleted = False
+    await db.commit()
+
+    if user.family_id:
+        fam_result = await db.execute(select(Family).where(Family.id == user.family_id))
+        fam = fam_result.scalar_one_or_none()
+        if fam:
+            fam.member_count += 1
+            await db.commit()
+
+    return {"message": "用户已恢复"}
 
 
 @router.post("/{user_id}/reset-password")
@@ -172,7 +214,13 @@ async def reset_password(
         raise HTTPException(status_code=404, detail="用户不存在")
     user.password = hash_password(payload.new_password)
     await db.commit()
-    return {"message": "密码已重置"}
+
+    kicked = await kick_user_sessions(
+        user_id=str(user.id),
+        reason="密码已修改，请重新登录",
+    )
+
+    return {"message": "密码已重置", "kicked_sessions": kicked}
 
 
 @router.put("/{user_id}/ban")
@@ -198,4 +246,12 @@ async def ban_user(
         user.ban_reason = None
     await db.commit()
     await db.refresh(user)
-    return {"message": "封禁状态已更新", "ban_flag": user.ban_flag}
+
+    kicked = 0
+    if payload.ban_flag:
+        kicked = await kick_user_sessions(
+            user_id=str(user.id),
+            reason=f"账号已被封禁，原因：{payload.ban_reason or '未说明'}",
+        )
+
+    return {"message": "封禁状态已更新", "ban_flag": user.ban_flag, "kicked_sessions": kicked}

@@ -10,7 +10,6 @@ class MenuCategoryOut(BaseModel):
 
     id: uuid.UUID
     name: str
-    icon: Optional[str] = None
     sort: int = 0
     status: int = 1
     menu_count: int = 0
@@ -18,14 +17,12 @@ class MenuCategoryOut(BaseModel):
 
 class MenuCategoryCreate(BaseModel):
     name: str = Field(min_length=1, max_length=32)
-    icon: Optional[str] = None
     sort: int = 0
     status: int = 1
 
 
 class MenuCategoryUpdate(BaseModel):
     name: Optional[str] = Field(default=None, min_length=1, max_length=32)
-    icon: Optional[str] = None
     sort: Optional[int] = None
     status: Optional[int] = None
 
@@ -38,6 +35,7 @@ class MenuOut(BaseModel):
     name: str
     url: str
     icon: Optional[str] = None
+    icon_color: Optional[str] = None
     sort: int = 0
     external: int = 0
     visible: int = 1
@@ -51,6 +49,7 @@ class MenuCreate(BaseModel):
     name: str = Field(min_length=1, max_length=64)
     url: str = Field(min_length=1, max_length=255)
     icon: Optional[str] = None
+    icon_color: Optional[str] = None
     sort: int = 0
     external: int = 0
     visible: int = 1
@@ -64,6 +63,7 @@ class MenuUpdate(BaseModel):
     name: Optional[str] = Field(default=None, min_length=1, max_length=64)
     url: Optional[str] = Field(default=None, min_length=1, max_length=255)
     icon: Optional[str] = None
+    icon_color: Optional[str] = None
     sort: Optional[int] = None
     external: Optional[int] = None
     visible: Optional[int] = None
@@ -80,6 +80,7 @@ class MenuSimpleOut(BaseModel):
     name: str
     url: str
     icon: Optional[str] = None
+    icon_color: Optional[str] = None
     external: int = 0
 
 

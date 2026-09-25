@@ -60,6 +60,7 @@ class Family(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     name: Mapped[str] = mapped_column(String(64), nullable=False)
+    address: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     description: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     member_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     create_time: Mapped[datetime] = mapped_column(
@@ -106,6 +107,7 @@ class Menu(Base):
     name: Mapped[str] = mapped_column(String(64), nullable=False)
     url: Mapped[str] = mapped_column(String(255), nullable=False)
     icon: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    icon_color: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     sort: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     external: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
     visible: Mapped[int] = mapped_column(SmallInteger, default=1, nullable=False)

@@ -65,11 +65,14 @@ request.interceptors.response.use(
       storage.remove(KEY.sessionId)
       storage.remove(KEY.userInfo)
       showToast('登录已过期，请重新登录')
-      if (window.Capacitor) {
-        window.location.hash = '#/login'
-      } else {
-        window.location.hash = '#/login'
-      }
+      window.location.hash = '#/login'
+    } else if (status === 403 && typeof detail === 'string' && (detail.includes('强制下线') || detail.includes('重新登录') || detail.includes('封禁') || detail.includes('失效') || detail.includes('禁用'))) {
+      store.sessionId = ''
+      store.user = null
+      storage.remove(KEY.sessionId)
+      storage.remove(KEY.userInfo)
+      showToast(detail)
+      window.location.hash = '#/login'
     } else if (detail) {
       showToast(detail)
     } else {

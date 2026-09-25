@@ -71,7 +71,9 @@
                   @click="!isDragging && openMenu(menu)"
                 >
                   <div class="menu-icon-wrap" :class="getIconBgClass(menu)">
-                    <span class="icon-emoji">{{ menu.icon || '📦' }}</span>
+                    <component v-if="isSvgIcon(menu.icon)" :is="menu.icon" class="icon-svg" />
+                    <img v-else-if="isImageIcon(menu.icon)" :src="menu.icon" class="icon-img" />
+                    <span v-else class="icon-emoji">{{ menu.icon || '📦' }}</span>
                     <span v-if="menu.external === 1" class="external-tag">外链</span>
                   </div>
                   <div class="menu-name">{{ menu.name }}</div>
@@ -93,7 +95,9 @@
                   @click="!isDragging && openMenu(menu)"
                 >
                   <div class="menu-icon-wrap" :class="getIconBgClass(menu)">
-                    <span class="icon-emoji">{{ menu.icon || '📦' }}</span>
+                    <component v-if="isSvgIcon(menu.icon)" :is="menu.icon" class="icon-svg" />
+                    <img v-else-if="isImageIcon(menu.icon)" :src="menu.icon" class="icon-img" />
+                    <span v-else class="icon-emoji">{{ menu.icon || '📦' }}</span>
                     <span v-if="menu.external === 1" class="external-tag">外链</span>
                   </div>
                   <div class="menu-name">{{ menu.name }}</div>
@@ -121,10 +125,16 @@ import { store, setMenuData } from '@/store'
 import { getMyMenus, recordMenuClick } from '@/api/user'
 import { buildMenuUrl } from '@/config/domain'
 import storage, { KEY } from '@/utils/storage'
+import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+
+const svgIconSet = new Set(Object.keys(ElementPlusIconsVue))
+const isSvgIcon = (icon) => icon && svgIconSet.has(icon)
+const isImageIcon = (icon) => icon && /\.(png|jpg|jpeg|svg|webp|gif)$/i.test(icon)
 
 const ICON_BGS = [
   'bg-sky', 'bg-amber', 'bg-emerald', 'bg-violet',
   'bg-rose', 'bg-cyan', 'bg-orange', 'bg-indigo',
+  'bg-teal', 'bg-fuchsia',
 ]
 
 const router = useRouter()
@@ -273,6 +283,7 @@ const onTouchEnd = async () => {
 }
 
 const getIconBgClass = (menu) => {
+  if (menu.icon_color && menu.icon_color.startsWith('bg-')) return menu.icon_color
   const idx = Math.abs(hashStr(menu.name)) % ICON_BGS.length
   return ICON_BGS[idx]
 }
@@ -545,6 +556,24 @@ onMounted(async () => {
   justify-content: center;
   font-size: 22px;
   position: relative;
+  color: #fff;
+}
+
+.icon-svg {
+  width: 26px;
+  height: 26px;
+  color: #fff !important;
+  fill: currentColor;
+}
+.icon-svg svg {
+  fill: currentColor;
+}
+
+.icon-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  border-radius: 6px;
 }
 
 .icon-emoji {
@@ -564,14 +593,16 @@ onMounted(async () => {
   font-weight: 600;
 }
 
-.bg-sky     { background: #e0f2fe; }
-.bg-amber   { background: #fef3c7; }
-.bg-emerald { background: #d1fae5; }
-.bg-violet  { background: #ede9fe; }
-.bg-rose    { background: #ffe4e6; }
-.bg-cyan    { background: #cffafe; }
-.bg-orange  { background: #ffedd5; }
-.bg-indigo  { background: #e0e7ff; }
+.bg-sky     { background: linear-gradient(135deg, #0ea5e9, #38bdf8); }
+.bg-amber   { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+.bg-emerald { background: linear-gradient(135deg, #10b981, #34d399); }
+.bg-violet  { background: linear-gradient(135deg, #8b5cf6, #a78bfa); }
+.bg-rose    { background: linear-gradient(135deg, #f43f5e, #fb7185); }
+.bg-cyan    { background: linear-gradient(135deg, #06b6d4, #22d3ee); }
+.bg-orange  { background: linear-gradient(135deg, #f97316, #fb923c); }
+.bg-indigo  { background: linear-gradient(135deg, #6366f1, #818cf8); }
+.bg-teal    { background: linear-gradient(135deg, #14b8a6, #2dd4bf); }
+.bg-fuchsia { background: linear-gradient(135deg, #d946ef, #e879f9); }
 
 .menu-name {
   font-size: 11px;

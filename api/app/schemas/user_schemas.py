@@ -64,5 +64,10 @@ class UserSimpleOut(BaseModel):
     username: str
     nickname: Optional[str] = None
     avatar: Optional[str] = None
+    gender: int = 0
+    family_id: Optional[uuid.UUID] = None
     admin_flag: bool = False
     status: int = 1
+    ban_flag: bool = False
+    deleted: bool = False
+    last_login_time: Optional[datetime] = None

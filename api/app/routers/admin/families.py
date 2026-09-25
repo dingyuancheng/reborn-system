@@ -31,7 +31,7 @@ async def create_family(
     current_user: dict[str, Any] = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    family = Family(name=payload.name, description=payload.description)
+    family = Family(name=payload.name, address=payload.address, description=payload.description)
     db.add(family)
     await db.commit()
     await db.refresh(family)
