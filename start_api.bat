@@ -6,6 +6,6 @@ echo ================================
 echo   Reborn System - API 启动
 echo ================================
 echo.
-call %~dp0venv\Scripts\activate.bat
+call %~dp0api\.venv\Scripts\activate.bat
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 pause

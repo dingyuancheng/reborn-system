@@ -27,7 +27,7 @@ REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None) or None
 REDIS_DB = int(os.getenv("REDIS_DB", "0"))
 REDIS_SESSION_TTL = int(os.getenv("REDIS_SESSION_TTL", "86400"))
 
-UPLOAD_DIR = os.getenv("UPLOAD_DIR", str(PROJECT_ROOT / "uploads"))
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", str(BACKEND_DIR / "uploads"))
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 STATIC_URL = "/static"
