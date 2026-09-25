@@ -5,9 +5,7 @@ from urllib.parse import quote_plus
 from dotenv import load_dotenv
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
-PROJECT_ROOT = BACKEND_DIR.parent
 
-load_dotenv(PROJECT_ROOT / ".env")
 load_dotenv(BACKEND_DIR / ".env")
 
 DB_HOST = os.getenv("DB_HOST", "localhost")
