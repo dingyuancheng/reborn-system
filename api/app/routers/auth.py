@@ -204,6 +204,17 @@ async def login(payload: LoginRequest, request: Request, db: AsyncSession = Depe
             detail=f"账号已被封禁，解封时间：{user.ban_time or '永久'}，原因：{user.ban_reason or '未说明'}",
         )
 
+    if not user.admin_flag:
+        await _write_login_log(
+            db, username=payload.username, user_id=user.id,
+            nickname=user.nickname, login_result=0,
+            fail_reason="非管理员账号，禁止登录后台", request=request,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="非管理员账号，禁止登录后台",
+        )
+
     client_ip = _extract_client_ip(request)
     user_agent = request.headers.get("user-agent", "")
     device_info = _extract_device_info(user_agent)

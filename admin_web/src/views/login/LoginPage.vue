@@ -103,7 +103,8 @@ async function handleLogin() {
       const redirect = (route.query.redirect as string) || '/dashboard'
       router.push(redirect)
     } catch (e: any) {
-      // request.ts 拦截器已处理错误提示
+      if (e?.config) return
+      ElMessage.error(e?.message || '登录失败，请稍后重试')
     } finally {
       loading.value = false
     }
