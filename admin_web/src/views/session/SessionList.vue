@@ -99,7 +99,8 @@ async function loadData() {
 }
 
 async function kick(row: any) {
-  const reason = prompt('请输入踢下线原因（用户会看到）：', '管理员强制下线') || '管理员强制下线'
+  const reason = prompt('请输入踢下线原因（用户会看到）：', '管理员强制下线')
+  if (reason === null) return
   await kickSession(row.session_id, reason)
   ElMessage.success('已踢下线')
   await loadData()

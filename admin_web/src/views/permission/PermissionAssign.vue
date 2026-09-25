@@ -42,7 +42,7 @@
             </el-radio-group>
             <div class="perm-actions">
               <el-checkbox v-model="checkAll" :indeterminate="indeterminate" @change="handleCheckAll">全选</el-checkbox>
-              <el-button type="primary" :loading="saving" size="small" @click="savePerms">保存</el-button>
+              <el-button type="primary" :loading="saving" style="height: 40px; padding: 0 24px; font-size: 15px" @click="savePerms">保存</el-button>
             </div>
           </div>
 
@@ -99,7 +99,7 @@
       />
       <template #footer>
         <el-button @click="batchVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="handleBatchSave">执行</el-button>
+        <el-button type="primary" :loading="saving" style="height: 40px; padding: 0 24px; font-size: 15px" @click="handleBatchSave">执行</el-button>
       </template>
     </el-dialog>
   </div>
@@ -209,7 +209,7 @@ async function loadPerms(userId: string) {
     checkedKeys.value = menuIds
     await nextTick()
     if (treeRef.value) {
-      treeRef.value.setCheckedKeys([...menuIds, ...categories.value.map((c) => c.id)])
+      treeRef.value.setCheckedKeys(menuIds)
     }
   } finally {
     loading.value = false
@@ -239,7 +239,7 @@ function batchOpen() {
   batchVisible.value = true
   nextTick(() => {
     if (batchTreeRef.value) {
-      batchTreeRef.value.setCheckedKeys([...batchMenuIds.value, ...categories.value.map((c) => c.id)])
+      batchTreeRef.value.setCheckedKeys(batchMenuIds.value)
     }
   })
 }

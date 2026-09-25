@@ -7,11 +7,14 @@
       </div>
 
       <el-table :data="families" v-loading="loading" stripe>
-        <el-table-column prop="name" label="家庭名称" width="200" />
-        <el-table-column prop="description" label="备注">
+        <el-table-column prop="name" label="家庭名称" width="180" />
+        <el-table-column prop="address" label="家庭地址" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.address || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="description" label="备注" show-overflow-tooltip>
           <template #default="{ row }">{{ row.description || '-' }}</template>
         </el-table-column>
-        <el-table-column prop="member_count" label="成员数" width="100" />
+        <el-table-column prop="member_count" label="成员数" width="80" />
         <el-table-column prop="create_time" label="创建时间" width="180">
           <template #default="{ row }">{{ formatTime(row.create_time) }}</template>
         </el-table-column>
@@ -28,10 +31,13 @@
       </el-table>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="editing ? '编辑家庭' : '新增家庭'" width="420px" destroy-on-close>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
+    <el-dialog v-model="dialogVisible" :title="editing ? '编辑家庭' : '新增家庭'" width="460px" destroy-on-close>
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
         <el-form-item label="家庭名" prop="name">
           <el-input v-model="form.name" />
+        </el-form-item>
+        <el-form-item label="家庭地址">
+          <el-input v-model="form.address" maxlength="255" show-word-limit />
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="form.description" type="textarea" :rows="3" />
@@ -58,7 +64,7 @@ const families = ref<any[]>([])
 const dialogVisible = ref(false)
 const editing = ref<any>(null)
 const formRef = ref<FormInstance>()
-const form = ref({ name: '', description: '' })
+const form = ref({ name: '', address: '', description: '' })
 const rules: FormRules = {
   name: [{ required: true, message: '请输入家庭名称', trigger: 'blur' }],
 }
@@ -79,7 +85,7 @@ async function loadData() {
 
 function openDialog(row?: any) {
   editing.value = row || null
-  form.value = row ? { name: row.name, description: row.description || '' } : { name: '', description: '' }
+  form.value = row ? { name: row.name, address: row.address || '', description: row.description || '' } : { name: '', address: '', description: '' }
   dialogVisible.value = true
 }
 

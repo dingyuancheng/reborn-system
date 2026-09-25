@@ -21,3 +21,9 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style>
+.el-table .el-button.is-link {
+  font-size: 15px;
+}
+</style>

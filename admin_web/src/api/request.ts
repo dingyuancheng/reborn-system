@@ -32,7 +32,7 @@ instance.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    if (status === 403 && typeof detail === 'string' && detail.includes('强制下线')) {
+    if (status === 403 && typeof detail === 'string' && (detail.includes('强制下线') || detail.includes('重新登录') || detail.includes('失效') || detail.includes('封禁') || detail.includes('禁用'))) {
       ElMessage.warning(detail)
       const userStore = useUserStore()
       userStore.logout()

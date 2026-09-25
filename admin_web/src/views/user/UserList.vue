@@ -3,12 +3,19 @@
     <el-card>
       <div class="toolbar">
         <div class="filters">
-          <el-select v-model="filterFamily" placeholder="按家庭筛选" clearable style="width: 160px" @change="loadData">
+          <el-select v-model="filterFamily" placeholder="按家庭筛选" clearable style="width: 160px">
             <el-option v-for="f in families" :key="f.id" :label="f.name" :value="f.id" />
           </el-select>
-          <el-input v-model="keyword" placeholder="搜索用户名/昵称" clearable style="width: 200px" @keyup.enter="loadData" @clear="loadData">
+          <el-input v-model="keyword" placeholder="搜索用户名/昵称" clearable style="width: 200px" @keyup.enter="loadData">
             <template #prefix><el-icon><Search /></el-icon></template>
           </el-input>
+          <el-select v-model="filterDeleted" placeholder="用户状态" style="width: 110px">
+            <el-option label="全部" :value="null" />
+            <el-option label="有效" :value="false" />
+            <el-option label="失效" :value="true" />
+          </el-select>
+          <el-button type="primary" :icon="Search" @click="loadData">查询</el-button>
+          <el-button @click="resetFilters">重置</el-button>
         </div>
         <el-button type="primary" :icon="Plus" @click="openDialog()">新增用户</el-button>
       </div>
@@ -32,7 +39,8 @@
         </el-table-column>
         <el-table-column label="状态" width="100">
           <template #default="{ row }">
-            <el-tag v-if="row.ban_flag" type="danger" size="small">已封禁</el-tag>
+            <el-tag v-if="row.deleted" type="info" size="small">失效</el-tag>
+            <el-tag v-else-if="row.ban_flag" type="danger" size="small">已封禁</el-tag>
             <el-tag v-else-if="row.status !== 1" type="warning" size="small">已禁用</el-tag>
             <el-tag v-else type="success" size="small">正常</el-tag>
           </template>
@@ -42,15 +50,24 @@
         </el-table-column>
         <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="openDialog(row)">编辑</el-button>
-            <el-button link type="primary" size="small" @click="openResetPwd(row)">重置密码</el-button>
-            <el-button link v-if="row.ban_flag" type="success" size="small" @click="toggleBan(row, false)">解封</el-button>
-            <el-button link v-else type="warning" size="small" @click="toggleBan(row, true)">封禁</el-button>
-            <el-popconfirm title="确定删除该用户？" @confirm="handleDelete(row.id)">
-              <template #reference>
-                <el-button link type="danger" size="small">删除</el-button>
-              </template>
-            </el-popconfirm>
+            <template v-if="row.deleted">
+              <el-popconfirm title="确定恢复该用户？" @confirm="handleRestore(row.id)">
+                <template #reference>
+                  <el-button link type="success" size="small">恢复</el-button>
+                </template>
+              </el-popconfirm>
+            </template>
+            <template v-else>
+              <el-button link type="primary" size="small" @click="openDialog(row)">编辑</el-button>
+              <el-button link type="primary" size="small" @click="openResetPwd(row)">重置密码</el-button>
+              <el-button link v-if="row.ban_flag" type="success" size="small" @click="toggleBan(row, false)">解封</el-button>
+              <el-button link v-else type="warning" size="small" @click="toggleBan(row, true)">封禁</el-button>
+              <el-popconfirm title="确定删除该用户？" @confirm="handleDelete(row.id)">
+                <template #reference>
+                  <el-button link type="danger" size="small">删除</el-button>
+                </template>
+              </el-popconfirm>
+            </template>
           </template>
         </el-table-column>
       </el-table>
@@ -92,12 +109,15 @@
     </el-dialog>
 
     <el-dialog v-model="resetPwdVisible" title="重置密码" width="400px" destroy-on-close>
-      <el-form :model="resetForm" label-width="80px">
+      <el-form ref="resetFormRef" :model="resetForm" :rules="resetRules" label-width="80px">
         <el-form-item label="用户名">
           <el-input :model-value="resetForm.username" disabled />
         </el-form-item>
-        <el-form-item label="新密码">
-          <el-input v-model="resetForm.password" type="password" show-password placeholder="至少 6 位" />
+        <el-form-item label="新密码" prop="password">
+          <el-input v-model="resetForm.password" type="password" show-password placeholder="至少 6 位" @input="onPwdInput" />
+        </el-form-item>
+        <el-form-item label="确认密码" prop="confirmPassword">
+          <el-input v-model="resetForm.confirmPassword" type="password" show-password placeholder="再次输入新密码" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -112,13 +132,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
-import { listUsers, createUser, updateUser, deleteUser, resetPassword, banUser } from '@/api/user'
+import { listUsers, createUser, updateUser, deleteUser, restoreUser, resetPassword, banUser } from '@/api/user'
 import { listFamilies } from '@/api/family'
 
 const loading = ref(false)
 const saving = ref(false)
 const keyword = ref('')
 const filterFamily = ref('')
+const filterDeleted = ref<boolean | null>(false)
 const users = ref<any[]>([])
 const families = ref<any[]>([])
 
@@ -135,7 +156,26 @@ const rules: FormRules = {
 }
 
 const resetPwdVisible = ref(false)
-const resetForm = ref({ userId: '', username: '', password: '' })
+const resetFormRef = ref<FormInstance>()
+const resetForm = ref({ userId: '', username: '', password: '', confirmPassword: '' })
+const resetRules: FormRules = {
+  password: [
+    { required: true, min: 6, message: '密码至少 6 位', trigger: 'blur' },
+  ],
+  confirmPassword: [
+    { required: true, message: '请再次输入密码', trigger: 'blur' },
+    {
+      validator: (_rule, value, callback) => {
+        if (value && value !== resetForm.value.password) {
+          callback(new Error('两次输入的密码不一致'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur',
+    },
+  ],
+}
 
 const filteredList = computed(() => {
   let list = users.value
@@ -158,11 +198,18 @@ function formatTime(t: string) {
   return new Date(t).toLocaleString('zh-CN')
 }
 
+function resetFilters() {
+  keyword.value = ''
+  filterFamily.value = ''
+  filterDeleted.value = false
+  loadData()
+}
+
 async function loadData() {
   loading.value = true
   try {
     const [userRes, famRes]: any[] = await Promise.all([
-      listUsers(filterFamily.value || undefined),
+      listUsers(filterFamily.value || undefined, filterDeleted.value),
       listFamilies(),
     ])
     users.value = (userRes || []).map((u: any) => ({
@@ -221,29 +268,40 @@ async function handleDelete(id: string) {
   await loadData()
 }
 
+async function handleRestore(id: string) {
+  await restoreUser(id)
+  ElMessage.success('已恢复')
+  await loadData()
+}
+
 function openResetPwd(row: any) {
-  resetForm.value = { userId: row.id, username: row.username, password: '' }
+  resetForm.value = { userId: row.id, username: row.username, password: '', confirmPassword: '' }
   resetPwdVisible.value = true
 }
 
+function onPwdInput() {
+  resetFormRef.value?.validateField('confirmPassword')
+}
+
 async function handleResetPwd() {
-  if (!resetForm.value.password || resetForm.value.password.length < 6) {
-    ElMessage.warning('密码至少 6 位')
-    return
-  }
-  saving.value = true
-  try {
-    await resetPassword(resetForm.value.userId, resetForm.value.password)
-    ElMessage.success('密码已重置')
-    resetPwdVisible.value = false
-  } finally {
-    saving.value = false
-  }
+  if (!resetFormRef.value) return
+  await resetFormRef.value.validate(async (valid) => {
+    if (!valid) return
+    saving.value = true
+    try {
+      await resetPassword(resetForm.value.userId, resetForm.value.password)
+      ElMessage.success('密码已重置')
+      resetPwdVisible.value = false
+    } finally {
+      saving.value = false
+    }
+  })
 }
 
 async function toggleBan(row: any, ban: boolean) {
-  const reason = ban ? prompt('请输入封禁原因（可选）：') || null : null
-  await banUser(row.id, { ban_flag: ban, ban_reason: reason })
+  const reason = ban ? prompt('请输入封禁原因（可选）：') : null
+  if (reason === null && ban) return
+  await banUser(row.id, { ban_flag: ban, ban_reason: reason || null })
   ElMessage.success(ban ? '已封禁' : '已解封')
   await loadData()
 }

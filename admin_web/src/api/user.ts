@@ -15,9 +15,10 @@ export interface UserItem {
   family_name?: string | null
 }
 
-export function listUsers(family_id?: string) {
+export function listUsers(family_id?: string, deleted?: boolean | null) {
   const params: any = {}
   if (family_id) params.family_id = family_id
+  if (deleted !== undefined && deleted !== null) params.deleted = deleted
   return request.get('/api/admin/users', { params })
 }
 
@@ -35,6 +36,10 @@ export function updateUser(id: string, data: any) {
 
 export function deleteUser(id: string) {
   return request.delete(`/api/admin/users/${id}`)
+}
+
+export function restoreUser(id: string) {
+  return request.post(`/api/admin/users/${id}/restore`)
 }
 
 export function resetPassword(id: string, new_password: string) {

@@ -139,7 +139,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px 20px;
+  padding: 16px 20px 16px 40px;
   width: 100%;
 }
 .stat-icon {
