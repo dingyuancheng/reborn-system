@@ -12,7 +12,7 @@ from app.models import (
 )
 from app.redis_client import get_redis
 
-router = APIRouter(prefix="/api/admin/stats", tags=["admin-stats"])
+router = APIRouter(prefix="/admin/stats", tags=["admin-stats"])
 
 
 @router.get("")
@@ -46,7 +46,7 @@ async def dashboard_stats(
     )).scalar() or 0
 
     top_menus_stmt = (
-        select(Menu.name, Menu.icon, func.coalesce(func.sum(UserMenuClick.click_count), 0).label("total_count"))
+        select(Menu.name, Menu.icon, Menu.icon_text, Menu.icon_color, Menu.icon_text_color, func.coalesce(func.sum(UserMenuClick.click_count), 0).label("total_count"))
         .outerjoin(UserMenuClick, UserMenuClick.menu_id == Menu.id)
         .where(Menu.deleted == False)
         .group_by(Menu.id)
@@ -55,7 +55,14 @@ async def dashboard_stats(
     )
     top_menus_result = await db.execute(top_menus_stmt)
     top_menus = [
-        {"name": row[0], "icon": row[1], "click_count": int(row[2] or 0)}
+        {
+            "name": row[0],
+            "icon": row[1],
+            "icon_text": row[2],
+            "icon_color": row[3],
+            "icon_text_color": row[4],
+            "click_count": int(row[5] or 0),
+        }
         for row in top_menus_result.all()
     ]
 

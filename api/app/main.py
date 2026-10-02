@@ -96,7 +96,7 @@ async def lifespan(_app: FastAPI):
     await engine.dispose()
 
 
-app = FastAPI(title="Reborn System API", version="0.1.1", lifespan=lifespan)
+app = FastAPI(title="Reborn System API", version="0.1.1", lifespan=lifespan, root_path="/api")
 
 app.add_middleware(
     CORSMiddleware,

@@ -2,13 +2,19 @@
   <div class="page">
     <el-card>
       <div class="toolbar">
-        <div class="title">菜单分类</div>
+        <div class="filters">
+          <el-input v-model="keyword" placeholder="搜索分类名称" clearable style="width: 240px" @keyup.enter="loadData">
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+          <el-button type="primary" :icon="Search" @click="loadData">查询</el-button>
+          <el-button @click="resetFilters">重置</el-button>
+        </div>
         <el-button type="primary" :icon="Plus" @click="openDialog()">新增分类</el-button>
       </div>
 
       <el-alert v-if="dragging" title="拖拽中 - 松开鼠标完成排序" type="info" show-icon :closable="false" style="margin-bottom: 12px" />
 
-      <el-table :data="categories" v-loading="loading" stripe>
+      <el-table :data="filteredCategories" v-loading="loading" stripe>
         <el-table-column width="60" label="拖拽">
           <template #default="{ row, $index }">
             <span class="drag-handle" :class="{ dragging: dragIndex === $index }" @mousedown="startDrag($index, $event)">⠿</span>
@@ -56,14 +62,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Search } from '@element-plus/icons-vue'
 import { listCategories, createCategory, updateCategory, deleteCategory } from '@/api/category'
 
 const loading = ref(false)
 const saving = ref(false)
 const categories = ref<any[]>([])
+const keyword = ref('')
+
+const filteredCategories = computed(() => {
+  if (!keyword.value) return categories.value
+  const kw = keyword.value.toLowerCase()
+  return categories.value.filter((c) =>
+    c.name.toLowerCase().includes(kw),
+  )
+})
+
+function resetFilters() {
+  keyword.value = ''
+  loadData()
+}
 
 const dialogVisible = ref(false)
 const editing = ref<any>(null)
@@ -79,7 +99,8 @@ const dragIndex = ref(-1)
 async function loadData() {
   loading.value = true
   try {
-    categories.value = (await listCategories()) as any[]
+    const res = await listCategories()
+    categories.value = res as any[]
   } finally {
     loading.value = false
   }
@@ -175,6 +196,7 @@ onBeforeUnmount(() => {})
   align-items: center;
   margin-bottom: 16px;
 }
+.filters { display: flex; gap: 12px; }
 .title { font-size: 16px; font-weight: 600; }
 .drag-handle {
   cursor: grab;

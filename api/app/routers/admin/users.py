@@ -13,7 +13,7 @@ from app.redis_client import kick_user_sessions
 from app.schemas.user_schemas import UserCreate, UserOut, UserSimpleOut, UserUpdate
 from app.security import hash_password
 
-router = APIRouter(prefix="/api/admin/users", tags=["admin-users"])
+router = APIRouter(prefix="/admin/users", tags=["admin-users"])
 
 
 class ResetPasswordRequest(BaseModel):

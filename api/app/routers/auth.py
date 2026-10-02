@@ -15,7 +15,7 @@ from app.schemas.auth_schemas import (
 from app.schemas.user_schemas import UserOut
 from app.security import verify_password
 
-router = APIRouter(prefix="/api/auth", tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 def _extract_client_ip(request: Request) -> str:
@@ -161,7 +161,7 @@ async def _write_login_log(
 
 
 @router.post("/login", response_model=LoginResponse, status_code=status.HTTP_200_OK)
-async def login(payload: LoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
+async def login(payload: LoginRequest, request: Request, x_client: str = Header(default=""), db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(User).where(User.username == payload.username, User.deleted == False)
     )
@@ -204,7 +204,7 @@ async def login(payload: LoginRequest, request: Request, db: AsyncSession = Depe
             detail=f"账号已被封禁，解封时间：{user.ban_time or '永久'}，原因：{user.ban_reason or '未说明'}",
         )
 
-    if not user.admin_flag:
+    if not user.admin_flag and x_client != "mobile":
         await _write_login_log(
             db, username=payload.username, user_id=user.id,
             nickname=user.nickname, login_result=0,

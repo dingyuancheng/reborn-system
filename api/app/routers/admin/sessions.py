@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from app.deps import require_admin
 from app.redis_client import get_redis, mark_kicked
 
-router = APIRouter(prefix="/api/admin/sessions", tags=["admin-sessions"])
+router = APIRouter(prefix="/admin/sessions", tags=["admin-sessions"])
 
 
 class SessionOut(BaseModel):

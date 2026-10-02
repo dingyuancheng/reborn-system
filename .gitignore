@@ -15,6 +15,11 @@ __pycache__/
 # 前端依赖包
 mobile_app/node_modules/
 mobile_app/dist/
+mobile_h5/node_modules/
+mobile_h5/dist/
+admin_web/node_modules/
+admin_web/dist/
+
 
 # 安卓构建产物
 mobile_app/android/build/

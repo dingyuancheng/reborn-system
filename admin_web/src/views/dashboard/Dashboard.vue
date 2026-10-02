@@ -71,7 +71,9 @@
           <div v-if="stats.top_menus?.length" class="top-menus">
             <div v-for="(menu, idx) in stats.top_menus" :key="idx" class="top-menu-item">
               <span class="rank" :class="'rank-' + (idx + 1)">{{ idx + 1 }}</span>
-              <span class="icon">{{ menu.icon }}</span>
+              <div class="menu-icon-block" :style="getMenuIconStyle(menu)">
+                <span v-for="(char, cIdx) in getMenuIconChars(menu)" :key="cIdx" class="menu-icon-char">{{ char }}</span>
+              </div>
               <span class="name">{{ menu.name }}</span>
               <span class="count">{{ menu.click_count }} 次</span>
             </div>
@@ -105,6 +107,40 @@ import { User, View, House, Menu, TrendCharts, Calendar } from '@element-plus/ic
 
 const stats = ref<any>({})
 let timer: number | null = null
+
+const ICON_BGS = ['#0ea5e9', '#f59e0b', '#10b981', '#8b5cf6', '#f43f5e', '#06b6d4', '#f97316', '#6366f1', '#14b8a6', '#d946ef']
+
+function hashStr(s: string) {
+  let h = 0
+  for (let i = 0; i < s.length; i++) {
+    h = ((h << 5) - h + s.charCodeAt(i)) | 0
+  }
+  return h
+}
+
+function getAutoBgColor(s: string) {
+  if (!s) return '#0ea5e9'
+  const idx = Math.abs(hashStr(s)) % ICON_BGS.length
+  return ICON_BGS[idx]
+}
+
+function getMenuIconChars(menu: any) {
+  const text = menu.icon_text || menu.name || ''
+  return text.split('')
+}
+
+function getMenuIconStyle(menu: any) {
+  let bg = '#0ea5e9'
+  if (menu.icon_color && (menu.icon_color.startsWith('#') || menu.icon_color.startsWith('rgb'))) {
+    bg = menu.icon_color
+  } else if (menu.icon_color && menu.icon_color.startsWith('linear-gradient')) {
+    bg = menu.icon_color
+  } else {
+    bg = getAutoBgColor(menu.icon_text || menu.name || '')
+  }
+  const color = menu.icon_text_color || '#ffffff'
+  return { background: bg, color }
+}
 
 async function loadData() {
   try {
@@ -202,8 +238,26 @@ onUnmounted(() => {
 .rank-1 { background: #fef3c7; color: #d97706; }
 .rank-2 { background: #e5e7eb; color: #4b5563; }
 .rank-3 { background: #fed7aa; color: #c2410c; }
-.icon {
-  font-size: 20px;
+.menu-icon-block {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  flex-shrink: 0;
+  overflow: hidden;
+  padding: 2px;
+}
+.menu-icon-char {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .name {
   flex: 1;

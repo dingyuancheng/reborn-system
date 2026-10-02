@@ -10,7 +10,7 @@ from app.deps import require_admin
 from app.models import Family, User
 from app.schemas.family_schemas import FamilyCreate, FamilyOut, FamilyUpdate
 
-router = APIRouter(prefix="/api/admin/families", tags=["admin-families"])
+router = APIRouter(prefix="/admin/families", tags=["admin-families"])
 
 
 @router.get("", response_model=list[FamilyOut])

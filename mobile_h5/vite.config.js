@@ -5,7 +5,7 @@ import { VantResolver } from 'unplugin-vue-components/resolvers'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
-  base: '/mobile/',
+  base: '/h5/',
   plugins: [
     vue(),
     Components({
@@ -19,7 +19,7 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 5175,
     proxy: {
       '/api': {
         target: 'http://localhost:8000',

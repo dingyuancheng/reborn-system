@@ -70,10 +70,10 @@
                   class="menu-item"
                   @click="!isDragging && openMenu(menu)"
                 >
-                  <div class="menu-icon-wrap" :class="getIconBgClass(menu)">
-                    <component v-if="isSvgIcon(menu.icon)" :is="menu.icon" class="icon-svg" />
-                    <img v-else-if="isImageIcon(menu.icon)" :src="menu.icon" class="icon-img" />
-                    <span v-else class="icon-emoji">{{ menu.icon || '📦' }}</span>
+                  <div class="menu-icon-wrap" :style="getIconStyle(menu)">
+                    <span class="icon-text">
+                      <span v-for="(char, idx) in getIconChars(menu)" :key="idx" class="icon-char">{{ char }}</span>
+                    </span>
                     <span v-if="menu.external === 1" class="external-tag">外链</span>
                   </div>
                   <div class="menu-name">{{ menu.name }}</div>
@@ -94,10 +94,10 @@
                   class="menu-item"
                   @click="!isDragging && openMenu(menu)"
                 >
-                  <div class="menu-icon-wrap" :class="getIconBgClass(menu)">
-                    <component v-if="isSvgIcon(menu.icon)" :is="menu.icon" class="icon-svg" />
-                    <img v-else-if="isImageIcon(menu.icon)" :src="menu.icon" class="icon-img" />
-                    <span v-else class="icon-emoji">{{ menu.icon || '📦' }}</span>
+                  <div class="menu-icon-wrap" :style="getIconStyle(menu)">
+                    <span class="icon-text">
+                      <span v-for="(char, idx) in getIconChars(menu)" :key="idx" class="icon-char">{{ char }}</span>
+                    </span>
                     <span v-if="menu.external === 1" class="external-tag">外链</span>
                   </div>
                   <div class="menu-name">{{ menu.name }}</div>
@@ -125,17 +125,50 @@ import { store, setMenuData } from '@/store'
 import { getMyMenus, recordMenuClick } from '@/api/user'
 import { buildMenuUrl } from '@/config/domain'
 import storage, { KEY } from '@/utils/storage'
-import * as ElementPlusIconsVue from '@element-plus/icons-vue'
-
-const svgIconSet = new Set(Object.keys(ElementPlusIconsVue))
-const isSvgIcon = (icon) => icon && svgIconSet.has(icon)
-const isImageIcon = (icon) => icon && /\.(png|jpg|jpeg|svg|webp|gif)$/i.test(icon)
 
 const ICON_BGS = [
-  'bg-sky', 'bg-amber', 'bg-emerald', 'bg-violet',
-  'bg-rose', 'bg-cyan', 'bg-orange', 'bg-indigo',
-  'bg-teal', 'bg-fuchsia',
+  '#0ea5e9', '#f59e0b', '#10b981', '#8b5cf6', '#f43f5e',
+  '#06b6d4', '#f97316', '#6366f1', '#14b8a6', '#d946ef',
 ]
+
+function hashStr(s) {
+  let h = 0
+  for (let i = 0; i < s.length; i++) {
+    h = ((h << 5) - h) + s.charCodeAt(i)
+    h |= 0
+  }
+  return h
+}
+
+function getAutoBgColor(s) {
+  if (!s) return '#0ea5e9'
+  const idx = Math.abs(hashStr(s)) % ICON_BGS.length
+  return ICON_BGS[idx]
+}
+
+const getIconText = (menu) => {
+  if (menu.icon_text) return menu.icon_text
+  if (menu.name) return menu.name.charAt(0)
+  return ''
+}
+
+const getIconChars = (menu) => {
+  const text = menu.icon_text || menu.name || ''
+  return text.split('')
+}
+
+const getIconStyle = (menu) => {
+  let bg = '#0ea5e9'
+  if (menu.icon_color && (menu.icon_color.startsWith('#') || menu.icon_color.startsWith('rgb'))) {
+    bg = menu.icon_color
+  } else if (menu.icon_color && menu.icon_color.startsWith('linear-gradient')) {
+    bg = menu.icon_color
+  } else {
+    bg = getAutoBgColor(menu.icon_text || menu.name || '')
+  }
+  const color = menu.icon_text_color || '#ffffff'
+  return { background: bg, color }
+}
 
 const router = useRouter()
 const activeCategory = ref(0)
@@ -280,21 +313,6 @@ const onTouchEnd = async () => {
     dragOffset.value = 0
     setTimeout(() => { animating.value = false }, 320)
   }
-}
-
-const getIconBgClass = (menu) => {
-  if (menu.icon_color && menu.icon_color.startsWith('bg-')) return menu.icon_color
-  const idx = Math.abs(hashStr(menu.name)) % ICON_BGS.length
-  return ICON_BGS[idx]
-}
-
-function hashStr(s) {
-  let h = 0
-  for (let i = 0; i < s.length; i++) {
-    h = ((h << 5) - h) + s.charCodeAt(i)
-    h |= 0
-  }
-  return h
 }
 
 const getMenusByCategory = (catId) => {
@@ -554,30 +572,28 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
   position: relative;
-  color: #fff;
+  overflow: hidden;
 }
 
-.icon-svg {
-  width: 26px;
-  height: 26px;
-  color: #fff !important;
-  fill: currentColor;
-}
-.icon-svg svg {
-  fill: currentColor;
-}
-
-.icon-img {
-  width: 28px;
-  height: 28px;
-  object-fit: contain;
-  border-radius: 6px;
+.icon-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+  padding: 4px;
+  line-height: 1.3;
 }
 
-.icon-emoji {
-  line-height: 1;
+.icon-char {
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .external-tag {
@@ -592,17 +608,6 @@ onMounted(async () => {
   line-height: 1.3;
   font-weight: 600;
 }
-
-.bg-sky     { background: linear-gradient(135deg, #0ea5e9, #38bdf8); }
-.bg-amber   { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
-.bg-emerald { background: linear-gradient(135deg, #10b981, #34d399); }
-.bg-violet  { background: linear-gradient(135deg, #8b5cf6, #a78bfa); }
-.bg-rose    { background: linear-gradient(135deg, #f43f5e, #fb7185); }
-.bg-cyan    { background: linear-gradient(135deg, #06b6d4, #22d3ee); }
-.bg-orange  { background: linear-gradient(135deg, #f97316, #fb923c); }
-.bg-indigo  { background: linear-gradient(135deg, #6366f1, #818cf8); }
-.bg-teal    { background: linear-gradient(135deg, #14b8a6, #2dd4bf); }
-.bg-fuchsia { background: linear-gradient(135deg, #d946ef, #e879f9); }
 
 .menu-name {
   font-size: 11px;

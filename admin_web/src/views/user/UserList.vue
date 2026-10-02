@@ -301,7 +301,7 @@ async function handleResetPwd() {
 async function toggleBan(row: any, ban: boolean) {
   const reason = ban ? prompt('请输入封禁原因（可选）：') : null
   if (reason === null && ban) return
-  await banUser(row.id, { ban_flag: ban, ban_reason: reason || null })
+  await banUser(row.id, { ban_flag: ban, ban_reason: reason || undefined })
   ElMessage.success(ban ? '已封禁' : '已解封')
   await loadData()
 }

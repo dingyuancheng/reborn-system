@@ -2,11 +2,17 @@
   <div class="page">
     <el-card>
       <div class="toolbar">
-        <div class="title">家庭管理</div>
+        <div class="filters">
+          <el-input v-model="keyword" placeholder="搜索家庭名称/地址" clearable style="width: 240px" @keyup.enter="loadData">
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+          <el-button type="primary" :icon="Search" @click="loadData">查询</el-button>
+          <el-button @click="resetFilters">重置</el-button>
+        </div>
         <el-button type="primary" :icon="Plus" @click="openDialog()">新增家庭</el-button>
       </div>
 
-      <el-table :data="families" v-loading="loading" stripe>
+      <el-table :data="filteredFamilies" v-loading="loading" stripe>
         <el-table-column prop="name" label="家庭名称" width="180" />
         <el-table-column prop="address" label="家庭地址" show-overflow-tooltip>
           <template #default="{ row }">{{ row.address || '-' }}</template>
@@ -52,14 +58,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Search } from '@element-plus/icons-vue'
 import { listFamilies, createFamily, updateFamily, deleteFamily } from '@/api/family'
 
 const loading = ref(false)
 const saving = ref(false)
+const keyword = ref('')
 const families = ref<any[]>([])
+
+const filteredFamilies = computed(() => {
+  if (!keyword.value) return families.value
+  const kw = keyword.value.toLowerCase()
+  return families.value.filter((f) =>
+    f.name.toLowerCase().includes(kw) || (f.address || '').toLowerCase().includes(kw),
+  )
+})
 
 const dialogVisible = ref(false)
 const editing = ref<any>(null)
@@ -74,10 +89,16 @@ function formatTime(t: string) {
   return new Date(t).toLocaleString('zh-CN')
 }
 
+function resetFilters() {
+  keyword.value = ''
+  loadData()
+}
+
 async function loadData() {
   loading.value = true
   try {
-    families.value = (await listFamilies()) as any[]
+    const res = await listFamilies()
+    families.value = res as any[]
   } finally {
     loading.value = false
   }
@@ -125,6 +146,11 @@ onMounted(loadData)
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+}
+.filters {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 .title {
   font-size: 16px;

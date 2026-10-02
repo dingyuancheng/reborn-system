@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from app.config import STATIC_URL, UPLOAD_DIR
 from app.deps import require_admin
 
-router = APIRouter(prefix="/api/admin/upload", tags=["admin-upload"])
+router = APIRouter(prefix="/admin/upload", tags=["admin-upload"])
 
 ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp", "svg", "ico"}
 MAX_IMAGE_SIZE = 2 * 1024 * 1024

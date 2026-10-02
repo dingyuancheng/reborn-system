@@ -7,11 +7,8 @@ import redis.asyncio as redis
 
 from app.config import (
     KICK_REASON_KEY_PREFIX,
-    REDIS_DB,
-    REDIS_HOST,
-    REDIS_PASSWORD,
-    REDIS_PORT,
     REDIS_SESSION_TTL,
+    REDIS_URL,
 )
 
 KEY_PREFIX = "reborn-session-"
@@ -22,11 +19,8 @@ _client: Optional[redis.Redis] = None
 def get_redis() -> redis.Redis:
     global _client
     if _client is None:
-        _client = redis.Redis(
-            host=REDIS_HOST,
-            port=REDIS_PORT,
-            password=REDIS_PASSWORD,
-            db=REDIS_DB,
+        _client = redis.from_url(
+            REDIS_URL,
             decode_responses=True,
         )
     return _client

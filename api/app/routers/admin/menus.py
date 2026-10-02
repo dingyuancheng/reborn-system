@@ -10,7 +10,7 @@ from app.deps import require_admin
 from app.models import Menu, MenuCategory
 from app.schemas.menu_schemas import MenuCreate, MenuOut, MenuUpdate
 
-router = APIRouter(prefix="/api/admin/menus", tags=["admin-menus"])
+router = APIRouter(prefix="/admin/menus", tags=["admin-menus"])
 
 
 @router.get("", response_model=list[MenuOut])
@@ -48,6 +48,9 @@ async def create_menu(
         name=payload.name,
         url=payload.url,
         icon=payload.icon,
+        icon_text=payload.icon_text,
+        icon_color=payload.icon_color,
+        icon_text_color=payload.icon_text_color,
         sort=payload.sort,
         external=payload.external,
         visible=payload.visible,

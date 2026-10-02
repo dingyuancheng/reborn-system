@@ -12,7 +12,7 @@ from app.schemas.menu_schemas import (
     MenuCategoryCreate, MenuCategoryOut, MenuCategoryUpdate,
 )
 
-router = APIRouter(prefix="/api/admin/categories", tags=["admin-categories"])
+router = APIRouter(prefix="/admin/categories", tags=["admin-categories"])
 
 
 @router.get("", response_model=list[MenuCategoryOut])

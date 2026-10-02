@@ -23,6 +23,8 @@ const request = axios.create({
 })
 
 request.interceptors.request.use((config) => {
+  config.headers['X-Client'] = 'mobile'
+
   const sessionId = store.sessionId || storage.get(KEY.sessionId)
   if (sessionId) {
     config.headers['X-Session-Id'] = sessionId

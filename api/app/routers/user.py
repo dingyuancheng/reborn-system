@@ -15,7 +15,7 @@ from app.schemas.menu_schemas import (
     MenuCategoryOut, MenuSimpleOut, MyMenusResponse,
 )
 
-router = APIRouter(prefix="/api/user", tags=["user"])
+router = APIRouter(prefix="/user", tags=["user"])
 
 
 def _extract_device_info(user_agent: str) -> str:

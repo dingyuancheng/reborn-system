@@ -11,7 +11,7 @@ from app.deps import require_admin
 from app.models import Menu, User, UserMenu
 from app.schemas.menu_schemas import MenuSimpleOut
 
-router = APIRouter(prefix="/api/admin/permissions", tags=["admin-permissions"])
+router = APIRouter(prefix="/admin/permissions", tags=["admin-permissions"])
 
 
 class PermissionSetRequest(BaseModel):

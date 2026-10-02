@@ -6,7 +6,7 @@ from app.deps import get_current_user
 from app.schemas.user_schemas import UserOut
 from app.services import user_service
 
-router = APIRouter(prefix="/api/users", tags=["users"])
+router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("", response_model=list[UserOut])

@@ -2,13 +2,18 @@
   <div class="page">
     <el-card>
       <div class="toolbar">
-        <div class="title">会话管理 - 在线 {{ sessions.length }} 人</div>
         <div class="filters">
+          <el-input v-model="keyword" placeholder="搜索用户/昵称/IP" clearable style="width: 240px" @keyup.enter="loadData">
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
           <el-select v-model="filterUser" placeholder="按用户筛选" clearable style="width: 180px" @change="loadData">
             <el-option v-for="u in uniqueUsers" :key="u.id" :label="`${u.username} (${u.nickname || '-'})`" :value="u.username" />
           </el-select>
+          <el-button type="primary" :icon="Search" @click="loadData">查询</el-button>
+          <el-button @click="resetFilters">重置</el-button>
           <el-button :icon="Refresh" circle @click="loadData" />
         </div>
+        <div class="title">在线 {{ filteredSessions.length }} 人</div>
       </div>
 
       <el-table :data="filteredSessions" v-loading="loading" stripe>
@@ -60,10 +65,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Refresh } from '@element-plus/icons-vue'
+import { Refresh, Search } from '@element-plus/icons-vue'
 import { listSessions, kickSession, getSessionRaw } from '@/api/session'
 
 const loading = ref(false)
+const keyword = ref('')
 const filterUser = ref('')
 const sessions = ref<any[]>([])
 let timer: number | null = null
@@ -80,9 +86,26 @@ const uniqueUsers = computed(() => {
 })
 
 const filteredSessions = computed(() => {
-  if (!filterUser.value) return sessions.value
-  return sessions.value.filter((s) => s.username === filterUser.value)
+  let result = sessions.value
+  if (keyword.value) {
+    const kw = keyword.value.toLowerCase()
+    result = result.filter((s) =>
+      (s.username || '').toLowerCase().includes(kw) ||
+      (s.nickname || '').toLowerCase().includes(kw) ||
+      (s.ip || '').toLowerCase().includes(kw),
+    )
+  }
+  if (filterUser.value) {
+    result = result.filter((s) => s.username === filterUser.value)
+  }
+  return result
 })
+
+function resetFilters() {
+  keyword.value = ''
+  filterUser.value = ''
+  loadData()
+}
 
 function formatTime(t: string) {
   if (!t) return '-'
@@ -92,7 +115,8 @@ function formatTime(t: string) {
 async function loadData() {
   loading.value = true
   try {
-    sessions.value = (await listSessions()) as any[]
+    const res = await listSessions()
+    sessions.value = res as any[]
   } finally {
     loading.value = false
   }

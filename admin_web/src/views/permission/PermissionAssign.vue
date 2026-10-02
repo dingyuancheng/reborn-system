@@ -62,7 +62,10 @@
               <div class="cat-header">{{ cat.name }}</div>
               <el-checkbox-group v-model="currentMenuIds">
                 <el-checkbox v-for="m in cat.menus" :key="m.id" :value="m.id">
-                  {{ m.icon }} {{ m.name }} <span class="url">({{ m.url }})</span>
+                  <span class="menu-icon-block" :style="getMenuIconStyle(m)">
+                    <span v-for="(char, idx) in getMenuIconChars(m)" :key="idx" class="menu-icon-char">{{ char }}</span>
+                  </span>
+                  {{ m.name }} <span class="url">({{ m.url }})</span>
                 </el-checkbox>
               </el-checkbox-group>
             </div>
@@ -143,7 +146,7 @@ const treeData = computed(() => {
     isCategory: true,
     children: menus.value
       .filter((m) => m.category_id === c.id)
-      .map((m) => ({ id: m.id, label: `${m.icon || ''} ${m.name}`.trim() })),
+      .map((m) => ({ id: m.id, label: m.name })),
   }))
 })
 
@@ -274,6 +277,40 @@ async function handleBatchSave() {
 }
 
 onMounted(loadData)
+
+const ICON_BGS = ['#0ea5e9', '#f59e0b', '#10b981', '#8b5cf6', '#f43f5e', '#06b6d4', '#f97316', '#6366f1', '#14b8a6', '#d946ef']
+
+function hashStr(s: string) {
+  let h = 0
+  for (let i = 0; i < s.length; i++) {
+    h = ((h << 5) - h + s.charCodeAt(i)) | 0
+  }
+  return h
+}
+
+function getAutoBgColor(s: string) {
+  if (!s) return '#0ea5e9'
+  const idx = Math.abs(hashStr(s)) % ICON_BGS.length
+  return ICON_BGS[idx]
+}
+
+function getMenuIconChars(menu: any) {
+  const text = menu.icon_text || menu.name || ''
+  return text.split('')
+}
+
+function getMenuIconStyle(menu: any) {
+  let bg = '#0ea5e9'
+  if (menu.icon_color && (menu.icon_color.startsWith('#') || menu.icon_color.startsWith('rgb'))) {
+    bg = menu.icon_color
+  } else if (menu.icon_color && menu.icon_color.startsWith('linear-gradient')) {
+    bg = menu.icon_color
+  } else {
+    bg = getAutoBgColor(menu.icon_text || menu.name || '')
+  }
+  const color = menu.icon_text_color || '#ffffff'
+  return { background: bg, color }
+}
 </script>
 
 <style scoped>
@@ -291,6 +328,29 @@ onMounted(loadData)
 .perm-group { background: #f9fafb; border-radius: 8px; padding: 12px; }
 .cat-header { font-weight: 600; margin-bottom: 8px; color: #374151; }
 .url { color: #9ca3af; font-size: 12px; }
+.menu-icon-block {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  flex-shrink: 0;
+  overflow: hidden;
+  padding: 2px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.menu-icon-char {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .empty-card { display: flex; justify-content: center; align-items: center; min-height: 400px; }
 .card-header {
   display: flex;

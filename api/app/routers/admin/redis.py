@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Query
 from app.deps import require_admin
 from app.redis_client import get_redis
 
-router = APIRouter(prefix="/api/admin/redis", tags=["admin-redis"])
+router = APIRouter(prefix="/admin/redis", tags=["admin-redis"])
 
 
 @router.get("/keys")
