@@ -99,8 +99,7 @@ const dragIndex = ref(-1)
 async function loadData() {
   loading.value = true
   try {
-    const res = await listCategories()
-    categories.value = res as any[]
+    categories.value = await listCategories()
   } finally {
     loading.value = false
   }

@@ -97,8 +97,7 @@ function resetFilters() {
 async function loadData() {
   loading.value = true
   try {
-    const res = await listFamilies()
-    families.value = res as any[]
+    families.value = await listFamilies()
   } finally {
     loading.value = false
   }

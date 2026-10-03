@@ -115,8 +115,7 @@ function formatTime(t: string) {
 async function loadData() {
   loading.value = true
   try {
-    const res = await listSessions()
-    sessions.value = res as any[]
+    sessions.value = await listSessions()
   } finally {
     loading.value = false
   }

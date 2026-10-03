@@ -1,7 +1,7 @@
 import request from './request'
 
-export function listFamilies() {
-  return request.get('/api/admin/families')
+export function listFamilies(): Promise<any[]> {
+  return request.get('/api/admin/families') as unknown as Promise<any[]>
 }
 
 export function createFamily(data: { name: string; description?: string }) {

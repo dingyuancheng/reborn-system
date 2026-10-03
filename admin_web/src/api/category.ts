@@ -9,8 +9,8 @@ export interface CategoryItem {
   menu_count: number
 }
 
-export function listCategories() {
-  return request.get('/api/admin/categories')
+export function listCategories(): Promise<CategoryItem[]> {
+  return request.get('/api/admin/categories') as unknown as Promise<CategoryItem[]>
 }
 
 export function createCategory(data: { name: string; icon?: string; sort?: number; status?: number }) {
